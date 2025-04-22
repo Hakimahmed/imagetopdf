@@ -4,11 +4,132 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image to PDF Converter</title>
- 
-  <link rel="stylesheet" href="style.css">
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Embedding CSS -->
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        .container {
+            width: 80%;
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: #333;
+        }
+
+        header p {
+            font-size: 1rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            margin-top: 30px;
+        }
+
+        .upload-box {
+            border: 2px dashed #0099ff;
+            padding: 40px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .upload-box:hover {
+            background-color: #f1f8ff;
+            border-color: #0057d9;
+        }
+
+        .upload-box p {
+            font-size: 1rem;
+            color: #666;
+            margin: 0;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .preview {
+            margin-top: 20px;
+        }
+
+        .preview img {
+            max-width: 150px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Button Styles */
+        .btn {
+            background-color: #0099ff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #007acc;
+        }
+
+        /* Loading Indicator */
+        #loading {
+            display: none;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #007acc;
+        }
+
+        /* Download Link */
+        .download-link {
+            margin-top: 30px;
+            display: none;
+        }
+
+        /* Responsive Design */
+        @media screen and (max-width: 600px) {
+            .container {
+                width: 95%;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .upload-box {
+                padding: 30px;
+            }
+
+            .preview img {
+                max-width: 100px;
+            }
+        }
+    </style>
+
+    <!-- Embedding jsPDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -26,12 +147,83 @@
         </section>
 
         <button id="convertBtn" class="btn" disabled>Convert to PDF</button>
-
-        <div id="downloadLink" class="download-link" style="display:none;">
+        <div id="loading">Generating PDF...</div>
+        <div id="downloadLink" class="download-link">
             <button class="btn" id="downloadBtn">Download PDF</button>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // Select DOM elements
+        const uploadBox = document.getElementById('uploadBox');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const convertBtn = document.getElementById('convertBtn');
+        const loadingText = document.getElementById('loading');
+        const downloadLink = document.getElementById('downloadLink');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // Event listener for file upload
+        imageInput.addEventListener('change', handleFileUpload);
+        uploadBox.addEventListener('click', () => imageInput.click());
+
+        // Handle file upload and image preview
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            imagePreview.innerHTML = '';  // Clear any previous previews
+
+            if (files.length > 0) {
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const imgElement = document.createElement('img');
+                        imgElement.src = e.target.result;
+                        imagePreview.appendChild(imgElement);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                convertBtn.disabled = false;  // Enable convert button
+            }
+        }
+
+        // Convert images to PDF and enable download link
+        convertBtn.addEventListener('click', function() {
+            const images = document.querySelectorAll('.preview img');
+            const { jsPDF } = window.jspdf; // Ensure jsPDF is loaded properly
+            const pdf = new jsPDF();
+            loadingText.style.display = 'block';  // Show loading text
+
+            images.forEach((img, index) => {
+                const imgData = img.src;
+                const width = img.width; // Image width
+                const height = img.height; // Image height
+
+                if (index > 0) {
+                    pdf.addPage();
+                }
+
+                // Add image to PDF with automatic scaling
+                const ratio = 180 / width; // scale the image to fit within the page
+                const scaledHeight = height * ratio;
+
+                pdf.addImage(imgData, 'JPEG', 10, 10, 180, scaledHeight);
+            });
+
+            // Generate the PDF Blob
+            const pdfBlob = pdf.output('blob');
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+
+            // Hide loading text and show download link
+            loadingText.style.display = 'none';
+            downloadLink.style.display = 'block';
+
+            downloadBtn.addEventListener('click', function() {
+                const link = document.createElement('a');
+                link.href = pdfUrl;
+                link.download = 'converted_images.pdf';
+                link.click();
+            });
+        });
+    </script>
 </body>
 </html>
