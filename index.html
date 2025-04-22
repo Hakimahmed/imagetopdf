@@ -4,47 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image to PDF Converter</title>
-
     <!-- Embedding CSS -->
     <style>
         /* Global Styles */
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f0f4f8;
+            background-color: #f9f9f9;
             color: #333;
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .container {
             width: 90%;
-            max-width: 900px;
+            max-width: 960px;
             margin: 50px auto;
-            background-color: #fff;
+            background-color: #ffffff;
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
             text-align: center;
             position: relative;
         }
 
         header h1 {
-            font-size: 2.8rem;
-            color: #222;
+            font-size: 3rem;
+            color: #333;
             margin-bottom: 15px;
         }
 
         header p {
-            font-size: 1.1rem;
-            color: #555;
-            margin-bottom: 25px;
+            font-size: 1.2rem;
+            color: #777;
+            margin-bottom: 30px;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #181818;
+            color: #ddd;
+        }
+
+        body.dark-mode .container {
+            background-color: #222;
+            color: #ddd;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Toggle Dark Mode Button */
+        #darkModeToggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #darkModeToggle:hover {
+            background-color: #0056b3;
         }
 
         /* Upload Section */
         .upload-section {
             margin-top: 40px;
             position: relative;
+            transition: all 0.3s ease;
         }
 
         .upload-box {
@@ -53,22 +84,20 @@
             cursor: pointer;
             border-radius: 12px;
             transition: all 0.3s ease;
-            background: linear-gradient(145deg, #fff, #f1f1f1);
+            background: linear-gradient(145deg, #ffffff, #f0f4f8);
+            text-align: center;
         }
 
         .upload-box:hover {
-            background-color: #f8f9fa;
+            background-color: #f0f8ff;
             border-color: #0056b3;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
 
         .upload-box p {
             font-size: 1.2rem;
             color: #666;
-        }
-
-        input[type="file"] {
-            display: none;
+            margin: 0;
         }
 
         .preview {
@@ -76,18 +105,19 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 15px;
+            gap: 20px;
         }
 
         .preview img {
             max-width: 150px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s;
         }
 
         .preview img:hover {
             transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
         }
 
         /* Button Styles */
@@ -126,17 +156,6 @@
             display: none;
         }
 
-        /* Dark Mode */
-        body.dark-mode {
-            background-color: #181818;
-            color: #ddd;
-        }
-
-        body.dark-mode .container {
-            background-color: #222;
-            color: #ddd;
-        }
-
         /* Responsive Design */
         @media screen and (max-width: 768px) {
             .container {
@@ -145,23 +164,29 @@
             }
 
             header h1 {
-                font-size: 2.2rem;
+                font-size: 2.5rem;
             }
 
             .upload-box {
                 padding: 30px;
             }
+
+            .preview img {
+                max-width: 120px;
+            }
         }
     </style>
-
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Image to PDF Converter</h1>
-            <p>Convert your images into a high-quality PDF in just a few clicks.</p>
+            <p>Convert your images into a high-quality PDF in just a few clicks. Choose your preferred layout, upload images, and download the PDF.</p>
         </header>
+
+        <button id="darkModeToggle">Toggle Dark Mode</button>
 
         <section class="upload-section">
             <div class="upload-box" id="uploadBox">
@@ -169,6 +194,14 @@
                 <input type="file" id="imageInput" accept="image/*" multiple>
             </div>
             <div id="imagePreview" class="preview"></div>
+        </section>
+
+        <section id="pageOptions" style="margin-top: 40px;">
+            <label for="pageSizeSelect">Select PDF Page Size:</label>
+            <select id="pageSizeSelect" class="btn">
+                <option value="a4">A4</option>
+                <option value="letter">Letter</option>
+            </select>
         </section>
 
         <button id="convertBtn" class="btn" disabled>Convert to PDF</button>
@@ -188,6 +221,8 @@
         const loadingText = document.getElementById('loading');
         const downloadLink = document.getElementById('downloadLink');
         const downloadBtn = document.getElementById('downloadBtn');
+        const pageSizeSelect = document.getElementById('pageSizeSelect');
+        const darkModeToggle = document.getElementById('darkModeToggle');
 
         // Handle file upload and image preview
         imageInput.addEventListener('change', handleFileUpload);
@@ -211,12 +246,19 @@
             }
         }
 
+        // Dark mode toggle
+        darkModeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+        });
+
         // Convert images to PDF and enable download link
         convertBtn.addEventListener('click', function() {
             const images = document.querySelectorAll('.preview img');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
             loadingText.style.display = 'block';  // Show loading text
+
+            const pageSize = pageSizeSelect.value === 'a4' ? 'a4' : 'letter';
 
             images.forEach((img, index) => {
                 const imgData = img.src;
@@ -233,4 +275,37 @@
                 pdf.addImage(imgData, 'JPEG', 10, 10, 180, scaledHeight);
             });
 
-            // Generate the PDF Blob
+            // Generate and download the PDF
+            pdf.save('converted-images.pdf');
+            loadingText.style.display = 'none';  // Hide loading text
+            downloadLink.style.display = 'block';  // Show download button
+        });
+
+        // Download the PDF
+        downloadBtn.addEventListener('click', () => {
+            const images = document.querySelectorAll('.preview img');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+
+            const pageSize = pageSizeSelect.value === 'a4' ? 'a4' : 'letter';
+
+            images.forEach((img, index) => {
+                const imgData = img.src;
+                const width = img.width;
+                const height = img.height;
+
+                if (index > 0) {
+                    pdf.addPage();
+                }
+
+                const ratio = 180 / width;
+                const scaledHeight = height * ratio;
+
+                pdf.addImage(imgData, 'JPEG', 10, 10, 180, scaledHeight);
+            });
+
+            pdf.save('converted-images.pdf');
+        });
+    </script>
+</body>
+</html>
