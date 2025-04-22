@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image to PDF Converter with Editing</title>
+    <title>Image to PDF Converter</title>
 
     <!-- Embedding CSS -->
     <style>
@@ -193,8 +193,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>Image to PDF Converter with Editing</h1>
-            <p>Convert, edit, and customize your images into a high-quality PDF!</p>
+            <h1>Image to PDF Converter</h1>
+            <p>Convert, edit, and customize your images into a high-quality PDF in seconds!</p>
         </header>
 
         <button id="darkModeToggle">Toggle Dark Mode</button>
@@ -255,7 +255,9 @@
                 convertBtn.disabled = false;
             }
 
-            loadingText.style.display = 'none'; // Hide loading spinner
+            setTimeout(() => {
+                loadingText.style.display = 'none'; // Hide loading spinner after 1 second
+            }, 1000);  // Simulating a brief delay for loading
         }
 
         // Rotate image
@@ -271,38 +273,7 @@
             const images = document.querySelectorAll('.preview img');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
-            loadingText.style.display = 'block';  // Show loading spinner
-
-            images.forEach((img, index) => {
-                const imgData = img.src;
-                const width = img.width;
-                const height = img.height;
-                const rotate = parseInt(img.getAttribute('data-rotate'));
-
-                if (index > 0) {
-                    pdf.addPage();
-                }
-
-                const ratio = 180 / width;
-                const scaledHeight = height * ratio;
-
-                // Rotate image if necessary
-                pdf.addImage(imgData, 'JPEG', 10, 10, 180, scaledHeight, '', 'SLOW');
-                if (rotate !== 0) {
-                    pdf.rotate(rotate, { x: 95, y: 150 });
-                }
-            });
-
-            pdf.save('converted-images.pdf');
-            downloadLink.style.display = 'block';  // Show download button
-            loadingText.style.display = 'none';
-        });
-
-        // Download the PDF
-        downloadBtn.addEventListener('click', () => {
-            const images = document.querySelectorAll('.preview img');
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
+            loadingText.style.display = 'block'; // Show loading spinner
 
             images.forEach((img, index) => {
                 const imgData = img.src;
@@ -319,7 +290,18 @@
                 pdf.addImage(imgData, 'JPEG', 10, 10, 180, scaledHeight);
             });
 
-            pdf.save('converted-images.pdf');
+            setTimeout(() => {
+                const pdfOutput = pdf.output('blob');
+                const link = URL.createObjectURL(pdfOutput);
+                downloadLink.style.display = 'block';
+                downloadBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = link;
+                    a.download = 'converted-images.pdf';
+                    a.click();
+                };
+                loadingText.style.display = 'none'; // Hide loading spinner after PDF generation
+            }, 1000); // Simulate delay for better user experience
         });
 
         // Toggle Dark Mode
