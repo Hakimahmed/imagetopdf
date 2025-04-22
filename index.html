@@ -18,8 +18,8 @@
         }
 
         .container {
-            width: 90%;
-            max-width: 960px;
+            width: 95%;
+            max-width: 900px;
             margin: 50px auto;
             background-color: #ffffff;
             padding: 40px;
@@ -27,16 +27,17 @@
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
             text-align: center;
             position: relative;
+            transition: all 0.3s ease;
         }
 
         header h1 {
-            font-size: 3rem;
+            font-size: 2.8rem;
             color: #333;
             margin-bottom: 15px;
         }
 
         header p {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #777;
             margin-bottom: 30px;
         }
@@ -75,16 +76,15 @@
         .upload-section {
             margin-top: 40px;
             position: relative;
-            transition: all 0.3s ease;
         }
 
         .upload-box {
-            border: 3px dashed #007bff;
-            padding: 50px;
+            border: 2px dashed #007bff;
+            padding: 40px;
             cursor: pointer;
             border-radius: 12px;
             transition: all 0.3s ease;
-            background: linear-gradient(145deg, #ffffff, #f0f4f8);
+            background: linear-gradient(145deg, #ffffff, #f9f9f9);
             text-align: center;
         }
 
@@ -120,13 +120,12 @@
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
         }
 
-        /* Button Styles */
         .btn {
             background-color: #007bff;
             color: white;
             border: none;
-            padding: 14px 30px;
-            font-size: 1.2rem;
+            padding: 12px 25px;
+            font-size: 1.1rem;
             border-radius: 50px;
             cursor: pointer;
             transition: background-color 0.3s, transform 0.3s;
@@ -143,7 +142,7 @@
             cursor: not-allowed;
         }
 
-        /* Loading Indicator */
+        /* Loading Spinner */
         #loading {
             display: none;
             margin-top: 20px;
@@ -151,9 +150,19 @@
             color: #007bff;
         }
 
-        .download-link {
-            margin-top: 30px;
-            display: none;
+        #loadingSpinner {
+            margin: 10px auto;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* Responsive Design */
@@ -176,14 +185,14 @@
             }
         }
     </style>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Image to PDF Converter</h1>
-            <p>Convert your images into a high-quality PDF in just a few clicks. Choose your preferred layout, upload images, and download the PDF.</p>
+            <p>Convert your images into a high-quality PDF with editing options!</p>
         </header>
 
         <button id="darkModeToggle">Toggle Dark Mode</button>
@@ -196,16 +205,11 @@
             <div id="imagePreview" class="preview"></div>
         </section>
 
-        <section id="pageOptions" style="margin-top: 40px;">
-            <label for="pageSizeSelect">Select PDF Page Size:</label>
-            <select id="pageSizeSelect" class="btn">
-                <option value="a4">A4</option>
-                <option value="letter">Letter</option>
-            </select>
-        </section>
-
         <button id="convertBtn" class="btn" disabled>Convert to PDF</button>
-        <div id="loading">Generating PDF...</div>
+        <div id="loading" class="loading">
+            <div id="loadingSpinner"></div>
+            Generating PDF...
+        </div>
 
         <div id="downloadLink" class="download-link">
             <button class="btn" id="downloadBtn">Download PDF</button>
@@ -221,7 +225,6 @@
         const loadingText = document.getElementById('loading');
         const downloadLink = document.getElementById('downloadLink');
         const downloadBtn = document.getElementById('downloadBtn');
-        const pageSizeSelect = document.getElementById('pageSizeSelect');
         const darkModeToggle = document.getElementById('darkModeToggle');
 
         // Handle file upload and image preview
@@ -231,6 +234,7 @@
         function handleFileUpload(event) {
             const files = event.target.files;
             imagePreview.innerHTML = '';  // Clear previous previews
+            loadingText.style.display = 'block'; // Show loading spinner
 
             if (files.length > 0) {
                 Array.from(files).forEach(file => {
@@ -244,6 +248,8 @@
                 });
                 convertBtn.disabled = false;
             }
+
+            loadingText.style.display = 'none'; // Hide loading spinner when done
         }
 
         // Dark mode toggle
@@ -256,9 +262,6 @@
             const images = document.querySelectorAll('.preview img');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
-            loadingText.style.display = 'block';  // Show loading text
-
-            const pageSize = pageSizeSelect.value === 'a4' ? 'a4' : 'letter';
 
             images.forEach((img, index) => {
                 const imgData = img.src;
@@ -275,9 +278,7 @@
                 pdf.addImage(imgData, 'JPEG', 10, 10, 180, scaledHeight);
             });
 
-            // Generate and download the PDF
             pdf.save('converted-images.pdf');
-            loadingText.style.display = 'none';  // Hide loading text
             downloadLink.style.display = 'block';  // Show download button
         });
 
@@ -286,8 +287,6 @@
             const images = document.querySelectorAll('.preview img');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
-
-            const pageSize = pageSizeSelect.value === 'a4' ? 'a4' : 'letter';
 
             images.forEach((img, index) => {
                 const imgData = img.src;
