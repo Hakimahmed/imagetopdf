@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image to PDF Converter</title>
+    <title>Image to PDF Converter with Editing</title>
+
     <!-- Embedding CSS -->
     <style>
         /* Global Styles */
@@ -113,6 +114,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             transition: transform 0.3s ease, box-shadow 0.3s;
+            cursor: pointer;
         }
 
         .preview img:hover {
@@ -191,8 +193,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>Image to PDF Converter</h1>
-            <p>Convert your images into a high-quality PDF with editing options!</p>
+            <h1>Image to PDF Converter with Editing</h1>
+            <p>Convert, edit, and customize your images into a high-quality PDF!</p>
         </header>
 
         <button id="darkModeToggle">Toggle Dark Mode</button>
@@ -242,6 +244,10 @@
                     reader.onload = function(e) {
                         const imgElement = document.createElement('img');
                         imgElement.src = e.target.result;
+                        imgElement.setAttribute('data-rotate', 0); // Add a rotate data attribute
+                        imgElement.setAttribute('data-scale', 1); // Add scale factor for zoom
+                        imgElement.onclick = () => rotateImage(imgElement); // Allow click to rotate image
+                        imgElement.style.cursor = 'pointer';
                         imagePreview.appendChild(imgElement);
                     };
                     reader.readAsDataURL(file);
@@ -249,24 +255,29 @@
                 convertBtn.disabled = false;
             }
 
-            loadingText.style.display = 'none'; // Hide loading spinner when done
+            loadingText.style.display = 'none'; // Hide loading spinner
         }
 
-        // Dark mode toggle
-        darkModeToggle.addEventListener('click', function() {
-            document.body.classList.toggle('dark-mode');
-        });
+        // Rotate image
+        function rotateImage(img) {
+            const currentRotation = parseInt(img.getAttribute('data-rotate'));
+            const newRotation = (currentRotation + 90) % 360;
+            img.style.transform = `rotate(${newRotation}deg)`;
+            img.setAttribute('data-rotate', newRotation);
+        }
 
         // Convert images to PDF and enable download link
         convertBtn.addEventListener('click', function() {
             const images = document.querySelectorAll('.preview img');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
+            loadingText.style.display = 'block';  // Show loading spinner
 
             images.forEach((img, index) => {
                 const imgData = img.src;
                 const width = img.width;
                 const height = img.height;
+                const rotate = parseInt(img.getAttribute('data-rotate'));
 
                 if (index > 0) {
                     pdf.addPage();
@@ -275,11 +286,16 @@
                 const ratio = 180 / width;
                 const scaledHeight = height * ratio;
 
-                pdf.addImage(imgData, 'JPEG', 10, 10, 180, scaledHeight);
+                // Rotate image if necessary
+                pdf.addImage(imgData, 'JPEG', 10, 10, 180, scaledHeight, '', 'SLOW');
+                if (rotate !== 0) {
+                    pdf.rotate(rotate, { x: 95, y: 150 });
+                }
             });
 
             pdf.save('converted-images.pdf');
             downloadLink.style.display = 'block';  // Show download button
+            loadingText.style.display = 'none';
         });
 
         // Download the PDF
@@ -304,6 +320,11 @@
             });
 
             pdf.save('converted-images.pdf');
+        });
+
+        // Toggle Dark Mode
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
         });
     </script>
 </body>
